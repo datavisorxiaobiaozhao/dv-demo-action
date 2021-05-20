@@ -1,0 +1,108 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the action will run.
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  push:
+    branches: [main, master, dev_*, v*]
+  pull_request:
+    branches: [main, master, v*]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    env:
+      demo_name_xb: "dfa.dfeakoi"
+    # Steps represent a sequence of tasks that will be executed as part of the job
+
+    services:
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+
+      - name: Linux Get dependencies
+        run: sudo apt install -y cpanminus build-essential libncurses5-dev libreadline-dev libssl-dev perl
+
+      - name: install test-nginx
+        run: sudo cpanm --notest Test::Nginx IPC::Run > build.log 2>&1 || (cat build.log && exit 1)
+
+      - name: install openresty
+        run: |
+          sudo apt-get purge nginx nginx-common
+          wget -O - -q https://openresty.org/package/pubkey.gpg | sudo apt-key add -
+          echo "deb http://openresty.org/package/ubuntu $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/openresty.list
+          sudo apt-get update
+          sudo apt-get -y install cpanminus build-essential libncurses5-dev libreadline-dev libssl-dev perl openresty
+          sudo cpanm --notest Test::Nginx >build.log 2>&1 || (cat build.log && exit 1)
+          sudo ln -sf `which openresty` /usr/bin/nginx
+          openresty -V
+          nginx -V
+
+      - name: Run resty script
+        run: |
+          resty -V
+
+      - name: Run utest
+        run: |
+          echo "这里可以执行任何脚本"
+  build1:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: print env
+        run: |
+          echo $USER
+          uname -a
+
+  build2:
+    #runs-on: [self-hosted, linux, x64]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: run shell
+        run: |
+          echo $USER
+          uname -a
+          openresty -V
+
+  upload_job:
+    needs: [build1, build2]
+    runs-on: ubuntu-latest
+    name: Save output
+    steps:
+      - shell: bash
+        run: |
+          expr 1 + 1 > output.log
+      - name: Upload output file
+        uses: actions/upload-artifact@v2
+        with:
+          name: output-log-file
+          path: output.log
+  end_job:
+    needs: [build1, build2, upload_job]
+    runs-on: ubuntu-latest
+    name: Save output
+    steps:
+      - shell: bash
+        run: |
+          expr 1 + 40 > output2.log
+      - name: Upload output file
+        uses: actions/upload-artifact@v2
+        with:
+          name: output-log-file2
+          path: output2.log
