@@ -78,7 +78,6 @@ jobs:
         run: |
           echo $USER
           uname -a
-          openresty -V
 
   upload_job:
     needs: [build1, build2]
