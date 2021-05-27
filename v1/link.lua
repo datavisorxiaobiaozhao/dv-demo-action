@@ -15,4 +15,6 @@ local ok =
 if not ok then
     ngx.log(ngx.ERR, "fail to create link for socket.so")
 end
+
+-- 断言
 assert(ok == true)
