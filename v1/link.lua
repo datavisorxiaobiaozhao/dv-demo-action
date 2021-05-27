@@ -11,7 +11,7 @@ local ok =
         ngx_prefix
     )
 )
-
+ngx.say(ok)
 if not ok then
     ngx.log(ngx.ERR, "fail to create link for socket.so")
 end
